@@ -1,0 +1,186 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cadf76f2-1195-4174-a1d9-5aa96c26c4b7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1V3yr3J9m5Y0fPwfySvtTbP5Dx0fF0Cgqkro4kuTfk7g",
+          "mode": "list",
+          "cachedResultName": "myspreadsheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1V3yr3J9m5Y0fPwfySvtTbP5Dx0fF0Cgqkro4kuTfk7g/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1V3yr3J9m5Y0fPwfySvtTbP5Dx0fF0Cgqkro4kuTfk7g/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "81a82a8a-5b63-44a6-af22-c483d6ecfef9",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "55AFQnXUMeurwtvA",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: $input.first().json\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "310e9595-d103-4622-86fe-b2648e86a670",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a financial reporting system.\n\nReturn ONLY a structured KPI report in the following format:\n\nTITLE: Monthly KPI Report — {{Month}}\n\nSECTION 1 — EXECUTIVE SUMMARY\n- Write 2–3 short bullet points only\n\nSECTION 2 — KEY METRICS\n- Revenue:\n- Expenses:\n- Profit:\n- Customers:\n- Churn:\n- ARPU:\n\nSECTION 3 — ANALYSIS\n- Revenue analysis (1–2 bullets)\n- Customer & churn analysis (1–2 bullets)\n- Cost analysis (1–2 bullets)\n\nSECTION 4 — INSIGHTS\n- 3 bullet points only\n\nSECTION 5 — RECOMMENDATIONS\n- 3 actionable bullet points only\n\nRules:\n- Use bullet points only\n- No long paragraphs\n- No extra commentary outside sections\nReturn the output as a clean HTML report.\n\nStructure it like a dashboard:\n\n- Use <div> containers for sections\n- Use <h2> for titles\n- Use <table> for KPI metrics\n- Use <ul><li> for insights\n- Highlight key numbers in bold\n\nMake it look like a business dashboard report."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "1644eeb8-c642-4bee-85d5-441fae63cddb",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GSwkviJwh8FzRZhb",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "helchi.parnia@student.atilim.edu.tr",
+        "subject": "={{ $('Schedule Trigger').item.json.Month }}",
+        "message": "={{ $json.output[0].content[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "099f0a7c-ce3c-4f77-a105-fc2f26ebfb64",
+      "name": "Send a message",
+      "webhookId": "bc0b5deb-9b1d-47d4-a668-48f83f3e9ab9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ooSRwDOKBhRiXsSH",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "aef18ee5-cdd1-4937-bb60-d8390f39ad4a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5e8ebdb9bca591fc7ecf02927161f04539c593d587912c89d50d4490c66ea66c"
+  },
+  "id": "mvXXyb3JaZYTH615",
+  "tags": []
+}
