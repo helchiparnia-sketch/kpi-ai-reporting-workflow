@@ -1,0 +1,143 @@
+{
+  "name": "My workflow hw2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "91f382a3-d20a-4f6f-b22c-b5f87989a5eb",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1V3yr3J9m5Y0fPwfySvtTbP5Dx0fF0Cgqkro4kuTfk7g",
+          "mode": "list",
+          "cachedResultName": "myspreadsheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1V3yr3J9m5Y0fPwfySvtTbP5Dx0fF0Cgqkro4kuTfk7g/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1V3yr3J9m5Y0fPwfySvtTbP5Dx0fF0Cgqkro4kuTfk7g/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f81c6bec-fffe-4af6-9db5-160983073d23",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "55AFQnXUMeurwtvA",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: $input.first().json\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "84fb7cd8-bc66-487e-8f66-b181f446dc1c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "helchi.parnia@student.atilim.edu.tr",
+        "subject": "=Monthly KPI Raw Data - {{$json[\"Month\"]}}",
+        "message": "=<h2>Monthly KPI Report (Raw Data)</h2>\n\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><th>Metric</th><th>Value</th></tr>\n<tr><td>Month</td><td>{{$json[\"Month\"]}}</td></tr>\n<tr><td>Revenue</td><td>{{$json[\"Revenue\"]}}</td></tr>\n<tr><td>Customers</td><td>{{$json[\"Customers\"]}}</td></tr>\n<tr><td>Churn</td><td>{{$json[\"Churn\"]}}%</td></tr>\n<tr><td>Expenses</td><td>{{$json[\"Expenses\"]}}</td></tr>\n</table>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        0
+      ],
+      "id": "93ed04be-d222-48dc-837e-c88b7803d9b9",
+      "name": "Send a message",
+      "webhookId": "9ee35032-b3c5-488c-9c25-f4dc7d27017f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ooSRwDOKBhRiXsSH",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ab889c02-96e7-4c63-aeb2-627e373d7537",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5e8ebdb9bca591fc7ecf02927161f04539c593d587912c89d50d4490c66ea66c"
+  },
+  "id": "0D47aQyQQazna37s",
+  "tags": []
+}
