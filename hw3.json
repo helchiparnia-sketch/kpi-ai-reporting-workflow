@@ -1,0 +1,394 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -176,
+        16
+      ],
+      "id": "6b76e2ff-3667-464e-ba29-8af024ba1dee",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gCbU69YJ_N4LGYdgzOU5kRPx-0FZW2_4CFyxkV3OS3Q",
+          "mode": "list",
+          "cachedResultName": "KPI_Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gCbU69YJ_N4LGYdgzOU5kRPx-0FZW2_4CFyxkV3OS3Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gCbU69YJ_N4LGYdgzOU5kRPx-0FZW2_4CFyxkV3OS3Q/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        48,
+        32
+      ],
+      "id": "aa1a08de-7abb-4b5d-af77-8e9a3717acc6",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HSjRudF4h4Nq0qpI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Grab the current month and the previous month from the list\nconst current = items[items.length - 1].json;\nconst previous = items[items.length - 2] ? items[items.length - 2].json : null;\n\n// Handle the typo in the spreadsheet column header (\"mesaage\")\nconst userMessage = current.message || current.mesaage || \"\";\n\n// 2. VALIDATION CHECK (Rubric Requirement)\n// If the email is missing, mark it as Invalid and stop doing math.\nif (!current.email || current.email.toString().trim() === \"\") {\n    return [{\n        json: {\n            status: \"Invalid\",\n            reason: \"Missing email address. Cannot process.\",\n            message: userMessage\n        }\n    }];\n}\n\n// 3. CALCULATE GROWTH \nconst calcGrowth = (curr, prev) => {\n    // Prevent division by zero\n    if (!prev || prev === 0) return 0; \n    return (((curr - prev) / prev) * 100).toFixed(1);\n};\n\n// 4. RETURN DATA\nreturn [{\n  json: {\n      status: \"Valid\", \n      \n      // Pass the user info for the AI and Email nodes\n      email: current.email,\n      message: userMessage, // AI will use this!\n      \n      // Your KPI data mapping exactly to your sheet headers\n      month: current.Month,\n      revenue: current.Revenue,\n      rev_growth: previous ? calcGrowth(current.Revenue, previous.Revenue) + \"%\" : \"0%\",\n      expenses: current.Expenses,\n      exp_growth: previous ? calcGrowth(current.Expenses, previous.Expenses) + \"%\" : \"0%\",\n      customers: current.Customers,\n      cust_growth: previous ? calcGrowth(current.Customers, previous.Customers) + \"%\" : \"0%\",\n      churn: current.Churn,\n      churn_growth: previous ? calcGrowth(current.Churn, previous.Churn) + \"%\" : \"0%\",\n      arpu: current.ARPU,\n      arpu_growth: previous ? calcGrowth(current.ARPU, previous.ARPU) + \"%\" : \"0%\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        48
+      ],
+      "id": "2c076be4-f555-40fa-8149-53cbd4636588",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Return your response in STRICT JSON format with these exact keys:\n1. \"intent\": Classify the message as 'Support', 'Sales', or 'Feedback'.\n2. \"urgency\": Classify as 'High', 'Medium', or 'Low'.\n3. \"html_report\": A string containing the full HTML KPI Dashboard.\n\nCRITICAL HTML RULES FOR THE AI:\n- You MUST use actual HTML tags (<h2>, <ul>, <li>, <table>, <tr>, <td>).\n- DO NOT strip the tags. \n- DO NOT use \\n for line breaks. \n- DO NOT use markdown format.\n\nUse this EXACT HTML template for the \"html_report\" value:\n<h2>Monthly KPI Dashboard - {{ $json.month }}</h2>\n<p><strong>Narrative Summary:</strong> [Write summary here]</p>\n<h3>Key Highlights</h3>\n<ul>\n  <li>[Highlight 1]</li>\n  <li>[Highlight 2]</li>\n</ul>\n<h3>Performance Data</h3>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\" style=\"border-collapse: collapse; width: 100%;\">\n  <tr style=\"background-color: #f2f2f2;\"><th>Metric</th><th>Current Value</th><th>MoM Growth</th></tr>\n  <tr><td>Revenue</td><td>${{ $json.revenue }}</td><td>{{ $json.rev_growth }}</td></tr>\n  <tr><td>Expenses</td><td>${{ $json.expenses }}</td><td>{{ $json.exp_growth }}</td></tr>\n  <tr><td>Customers</td><td>{{ $json.customers }}</td><td>{{ $json.cust_growth }}</td></tr>\n  <tr><td>Churn</td><td>{{ $json.churn }}</td><td>{{ $json.churn_growth }}</td></tr>\n  <tr><td>ARPU</td><td>${{ $json.arpu }}</td><td>{{ $json.arpu_growth }}</td></tr>\n</table>"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "e828d328-4d01-41a0-8822-80bba7c882b1",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "s1v1DvuqcklHsrHT",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "helchi.parnia@student.atilim.edu.tr",
+        "subject": "={{ $('Schedule Trigger').item.json.Month }}",
+        "message": "={{ $json.output[0].content[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "9965562e-9d3e-426b-87c3-6af10dce0638",
+      "name": "Send a message",
+      "webhookId": "bc0b5deb-9b1d-47d4-a668-48f83f3e9ab9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XRT2m7kmivutn71a",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c15c3d6d-1453-4c57-a53a-2a23c02f4943",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "e81e0363-6c1a-451d-928d-a59b8da791f9",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        400,
+        64
+      ],
+      "id": "1c8db7be-f605-4a30-849d-d7debc82410a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1gCbU69YJ_N4LGYdgzOU5kRPx-0FZW2_4CFyxkV3OS3Q",
+          "mode": "list",
+          "cachedResultName": "KPI_Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gCbU69YJ_N4LGYdgzOU5kRPx-0FZW2_4CFyxkV3OS3Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gCbU69YJ_N4LGYdgzOU5kRPx-0FZW2_4CFyxkV3OS3Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Month": "={{ $('Code in JavaScript').item.json.month }}",
+            "Expenses": "={{ $('Code in JavaScript').item.json.expenses }}",
+            "Customers": "={{ $('Code in JavaScript').item.json.customers }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Month",
+              "displayName": "Month",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Revenue",
+              "displayName": "Revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Expenses",
+              "displayName": "Expenses",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customers",
+              "displayName": "Customers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Churn",
+              "displayName": "Churn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ARPU",
+              "displayName": "ARPU",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Intent",
+              "displayName": "Intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Urgency",
+              "displayName": "Urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI_Report",
+              "displayName": "AI_Report",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        224
+      ],
+      "id": "62bdee11-a19c-4190-820d-c55be83b8469",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HSjRudF4h4Nq0qpI",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0cd800c9-f7e8-439a-8001-5b268a027b0e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5265aec1d3b379ebf5a8b00ced6292d24b10418310709e794b20650888f0ad69"
+  },
+  "id": "OkpwIrJ7NYqWS39Z",
+  "tags": []
+}
